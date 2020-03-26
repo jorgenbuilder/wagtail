@@ -1,0 +1,66 @@
+{% load wagtailimages_tags %}
+{% load i18n %}
+{% trans "Crop image" as choose_str %}
+{% include "wagtailadmin/shared/header.html" with title=choose_str %}
+
+<section class="active nice-padding image-cropper">
+    <div class="crop-image">
+        {% image image original %}
+    </div>
+    <form action="{% url 'wagtailimages:chooser_select_rendition' image.id %}{% if form.post_processing_spec %}?pps={{ form.post_processing_spec|iriencode }}{% endif %}" method="POST">
+        {% csrf_token %}
+        <ul class="fields">
+            {% for field in form %}
+                {% if not field.label %}
+                    {{ field }}
+                {% endif %}
+            {% endfor %}
+
+            <li>
+                <div class="field cropped-area">
+                    <label>Cropped area</label>
+                    <div class="field-content">
+                        <div class="area-size"></div>
+                    </div>
+                </div>
+            </li>
+
+            {# hack! i'm relying on knowing what my labeled fields are #}
+            <li class="one-line">
+                {% for field in form %}
+                    {% if field.label %}
+                        {% include "wagtailadmin/shared/field.html" %}
+                    {% endif %}
+                {% endfor %}
+            </li>
+            <li>
+                <div class="label-above">
+                    <div class="field aspect-ratio">
+                        <label>Cropping aspect ratio</label>
+                        <div class="field-content">
+                            {% for ratio in form.ratios %}
+                                <input type="radio" name="aspect-ratio"
+                                       value="{{ ratio }}"
+                                       {% if ratio == form.default_ratio %}checked{% endif %}
+                                       {% if form.disable_selection %}disabled{% endif %}
+                                       />
+                                <span>{{ ratio }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </li>
+
+            <li>
+                <input type="submit" class="button crop-button"
+                       value="{% trans 'Crop' %}" />
+                {% if not form.force_selection.value %}
+                    <input type="submit" class="button skip-button"
+                           value="{% trans 'Whole image' %}" />
+                    <input type="button" class="button clear-button"
+                           value="{% trans 'Clear selection' %}" />
+                {% endif %}
+            </li>
+        </ul>
+    </form>
+</section>

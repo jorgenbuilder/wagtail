@@ -1,0 +1,120 @@
+{% load wagtailimages_tags static %}
+{% load i18n %}
+{% trans "Choose an image" as choose_str %}
+{% include "wagtailadmin/shared/header.html" with title=choose_str merged=1 tabbed=1 icon="image" %}
+
+{% if uploadform %}
+    <ul class="tab-nav merged">
+        <li class="{% if not uploadform.errors %}active{% endif %}"><a href="#search" >{% trans "Search" %}</a></li>
+        <li class="{% if uploadform.errors %}active{% endif %}"><a href="#upload">{% trans "Upload" %}</a></li>
+    </ul>
+{% endif %}
+
+<div class="tab-content">
+    <section id="search" class="{% if not uploadform.errors %}active{% endif %} nice-padding">
+        <form class="image-search search-bar" action="{% url 'wagtailimages:chooser' %}{% if will_select_format %}?select_format=true{% elif will_select_rendition %}?select_rendition=true{% if additional_params %}&amp;{{ additional_params|iriencode }}{% endif %}{% endif %}" method="GET" autocomplete="off" novalidate>
+            <ul class="fields">
+                {% for field in searchform %}
+                    {% include "wagtailadmin/shared/field_as_li.html" with field=field %}
+                {% endfor %}
+                {% if collections %}
+                    {% include "wagtailadmin/shared/collection_chooser.html" %}
+                {% endif %}
+                {% if popular_tags %}
+                    <li class="taglist">
+                        <h3>{% trans 'Popular tags' %}</h3>
+                        {% for tag in popular_tags %}
+                            <a class="suggested-tag tag" href="{% url 'wagtailimages:index' %}?tag={{ tag.name|urlencode }}">{{ tag.name }}</a>
+                        {% endfor %}
+                    </li>
+                {% endif %}
+            </ul>
+        </form>
+        <div id="image-results">
+            {% include "wagtailimages/chooser/results.html" %}
+        </div>
+    </section>
+    {% if uploadform %}
+        <section id="upload" class="{% if uploadform.errors %}active{% endif %} nice-padding">
+            <div id="{{ uploadid }}">
+                <div class="drop-zone">
+                    <p>{% trans "Drag and drop images into this area to upload immediately." %}</p>
+
+                    <form action="{% url 'wagtailimages:chooser_upload' %}{% if will_select_format %}?select_format=true{% elif will_select_rendition %}?select_rendition=true{% if additional_params %}&amp;{{ additional_params|iriencode }}{% endif %}{% endif %}"
+                    method="POST" enctype="multipart/form-data" novalidate>
+                        <div class="replace-file-input">
+                            <button class="button bicolor icon icon-plus">{% trans "Or choose from your computer" %}</button>
+                            <input class="fileupload" type="file" name="files[]" />
+                        </div>
+                        {% csrf_token %}
+                    </form>
+
+                    <form class="import-form" action="{% url 'wagtailimages:chooser_import_youtube' %}{% if will_select_format %}?select_format=true{% elif will_select_rendition %}?select_rendition=true{% if additional_params %}&amp;{{ additional_params|iriencode }}{% endif %}{% endif %}"
+                    method="POST">
+                        <div>OR</div>
+                        <input type="text" name="youtubeurl" placeholder="Youtube Video URL" />
+                        <input type="submit" class="button" value="Import Youtube Video Thumbnail" />
+                        {% csrf_token %}
+                    </form>
+                </div>
+
+                <div class="progress progress-secondary">
+                    <div class="bar" style="width: 0%;">0%</div>
+                </div>
+
+                <ul class="upload-list multiple"></ul>
+                {% include "wagtailimages/multiple/list_item.html" %}
+            </div>
+        </section>
+
+        {% url 'wagtailadmin_tag_autocomplete' as autocomplete_url %}
+        <script>
+            window.fileupload_opts = {
+                simple_upload_url: "{% url 'wagtailimages:add' %}",
+                accepted_file_types: /\.({{ allowed_extensions|join:"|" }})$/i, //must be regex
+                max_file_size: {{ max_filesize|default:"null" }}, //numeric format
+                errormessages: {
+                    max_file_size: "{{ error_max_file_size }}",
+                    accepted_file_types: "{{ error_accepted_file_types }}"
+                },
+                oneFileOnly: true
+            };
+
+            $(function() {
+                add_file_upload_widget($('#{{ uploadid }}'),
+                                       window.fileupload_opts);
+
+                $('#{{ uploadid }} .import-form').submit(function(e) {
+                    var main_el = $('#{{ uploadid }}');
+                    var li = $($('.upload-list-item', main_el).html()).addClass('upload-uploading');
+                    var dropZone = $('.drop-zone', main_el);
+                    $('.upload-list', main_el).append(li);
+
+                    $.ajax({
+                        type: 'POST',
+                        url: $(e.target).attr('action'),
+                        data: $(e.target).serialize(),
+                        success: (function(li) {
+                            return function(data) {
+                                if (data.success) {
+                                    dropZone.hide(400);
+                                    li.find('.preview .thumb').each(function(index, el) {
+                                        $(el).addClass('hasthumb');
+                                        $(el).append('<img src="' + data.thumbnail + '" />');
+                                    });
+
+                                    li.find('.right').append(data.form);
+                                }
+                            }
+                        })(li)
+                    });
+                    e.preventDefault();
+                });
+            });
+
+            window.tagit_opts = {
+                autocomplete: {source: "{{ autocomplete_url|addslashes }}"}
+            };
+        </script>
+    {% endif %}
+</div>
