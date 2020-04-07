@@ -71,7 +71,7 @@
     "gulp-autoprefixer": "~4.0.0",
     "gulp-cssnano": "^2.1.2",
     "gulp-rename": "^1.2.2",
-    "gulp-sass": "^3.2.1",
+    "gulp-sass": "^3.1.0",
     "gulp-size": "^2.1.0",
     "gulp-sourcemaps": "~2.6.1",
     "gulp-util": "~3.0.8",
@@ -87,7 +87,7 @@
   "dependencies": {
     "core-js": "^2.5.3",
     "draft-js": "0.10.5",
-    "draftail": "^0.17.0",
+    "draftail": "^0.17.1",
     "element-closest": "^2.0.2",
     "focus-trap-react": "^3.1.0",
     "prop-types": "^15.6.0",
